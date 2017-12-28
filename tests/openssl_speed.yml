@@ -1,5 +1,5 @@
 
-- hosts: Device
+- hosts: '{{ hosts }}'
   tasks:
     - name: remove latest data
       file:

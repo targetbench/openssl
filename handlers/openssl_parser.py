@@ -2,6 +2,9 @@ import re
 import string
 import math
 import yaml
+import copy
+import json
+from caliper.server.run import parser_log
 
 labels = ["^md5", "^sha1", "^des cbc", "^des ede3", "^sha256", "^sha512",
             "^aes-128 ige", "^aes-192 ige", "^aes-256 ige", "^rsa 2048",
@@ -122,13 +125,83 @@ def get_list(line, outfp, flag, list_tables):
             # outfp.write(flag+' ' + label + ' ' + str(list_label))
             break
 
+def openssl(filePath, outfp):
+    cases = parser_log.parseData(filePath)
+    result = []
+    for case in cases:
+        caseDict = {}
+        caseDict[parser_log.BOTTOM] = parser_log.getBottom(case)
+        titleGroup = re.search("\[test:([\s\S]+?)\]", case)
+        if titleGroup != None:
+            caseDict[parser_log.TOP] = titleGroup.group(0)
+
+        tables = []
+        tableContent = {}
+        tc = re.search("(The 'numbers'[\s\S]+?\n)([\s\S]+k\n)", case)
+        if tc is not None:
+            tableContent[parser_log.CENTER_TOP] = tc.groups()[0]
+            tableContent[parser_log.TABLE] = parser_log.parseTable(tc.groups()[1], "\\s{2,}")
+            tables.append(copy.deepcopy(tableContent))
+
+        tc1 = re.findall("(sign\\s{1,}verify\\s{1,}sign/s\\s{1,}verify/s\n)([\s\S]+?\n)\\s{5,}", case)
+        for group in tc1:
+            table = []
+            td_title = []
+            td_title.append("")
+            for table_title in re.split("\\s{1,}", group[0]):
+                if table_title.strip() != "":
+                    td_title.append(table_title)
+            table.append(td_title)
+            for line in group[1].splitlines():
+                td1_group = re.search("[\s\S]+?bits|[\s\S]+?\)", line)
+                td1 = td1_group.group(0)
+                now = line.replace(td1, "")
+                td = []
+                td.append(td1)
+                for cell in re.split("\\s{1,}", now):
+                    if cell.strip() != "":
+                        td.append(cell)
+                if len(td) > 0:
+                    table.append(td)
+            tableContent[parser_log.CENTER_TOP] = ""
+            tableContent[parser_log.TABLE] = table
+            tables.append(copy.deepcopy(tableContent))
+
+        op = re.findall("(op\\s{1,}op/s\n)([\s\S]+?\n)\[status\]", case)
+        for op_group in op:
+            table = []
+            td_title = []
+            td_title.append("")
+            for table_title in re.split("\\s{1,}", op_group[0]):
+                if table_title.strip() != "":
+                    td_title.append(table_title)
+            table.append(td_title)
+            for line in op_group[1].splitlines():
+                td1_group = re.search("[\s\S]+?\)", line)
+                td1 = td1_group.group(0)
+                now = line.replace(td1, "")
+                td = []
+                td.append(td1)
+                for cell in re.split("\\s{1,}", now):
+                    if cell.strip() != "":
+                        td.append(cell)
+                if len(td) > 0:
+                    table.append(td)
+            tableContent[parser_log.CENTER_TOP] = ""
+            tableContent[parser_log.TABLE] = table
+            tables.append(copy.deepcopy(tableContent))
+        caseDict[parser_log.TABLES] = tables
+        result.append(caseDict)
+    result = json.dumps(result)
+    outfp.write(result)
+    return result
+
 if __name__ == "__main__":
     infile = "openssl_output.log"
-    outfile = "openssl_parser.log"
+    outfile = "openssl_json.txt"
     infp = open(infile, "r")
     outfp = open(outfile, "a+")
     content = infp.read()
-    get_openssl_dic(content, outfp)
-    # parser1(content, outfp)
+    openssl(infile, outfp)
     outfp.close()
     infp.close()
