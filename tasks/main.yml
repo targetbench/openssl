@@ -1,8 +1,9 @@
 - name: copy file
-  copy: src=openssl.tar.gz dest=/tmp/openssl.tar.gz mode=0777
+  copy: src=build.openssl.tar.gz dest=/tmp/build.openssl.tar.gz mode=0777
 
 - name: tar file
-  shell: cd /tmp && tar xvf openssl.tar.gz && rm -rf openssl.tar.gz
+  shell: cd /tmp && tar xvf build.openssl.tar.gz && rm -rf build.openssl.tar.gz
 
 - name: run install
-  shell: "cd /tmp/openssl && ./install.sh"
+  shell: "cd /tmp/build.openssl && ./install.sh"
+  ignore_errors: yes

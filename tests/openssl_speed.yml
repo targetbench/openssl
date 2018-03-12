@@ -7,7 +7,7 @@
         state: absent
 
     - name: run openssl speed
-      shell: cd /tmp/build.openssl && openssl speed
+      shell: cd /tmp/openssl && openssl speed
       register: logdata
       ignore_errors: yes
 

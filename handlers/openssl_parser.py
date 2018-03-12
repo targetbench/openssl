@@ -4,7 +4,7 @@ import math
 import yaml
 import copy
 import json
-from caliper.server.run import parser_log
+from caliper.server.parser_process import parser_log
 
 labels = ["^md5", "^sha1", "^des cbc", "^des ede3", "^sha256", "^sha512",
             "^aes-128 ige", "^aes-192 ige", "^aes-256 ige", "^rsa 2048",
